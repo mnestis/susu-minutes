@@ -135,7 +135,7 @@ def check_minutes_status():
 
     for committee in committees:
         meetings = fetch_meetings(committee.url)
-    	print "\t%s had %s meetings this year." % (committee.name, len(meetings))
+    	print "\n\t%s had %s publicly announced meetings this year." % (committee.name, len(meetings))
     	for meeting in meetings:
     	    if not confirm_minutes(meeting.url):
     	        print "\t\tMissing minutes for %s. Due by %s. Overdue? %s" % (meeting.date.strftime("%d %b %Y"), 
