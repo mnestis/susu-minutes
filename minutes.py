@@ -13,14 +13,18 @@ See LICENSE for copyright information and licensing details.
 """
 
 import urllib, urllib2, re
-from datetime import datetime
+from datetime import datetime, timedelta
+from time import sleep
 
 # Magic things that just make it work...
+ddos_avoidance_delay = 0.25 #seconds, we don't want to upset the webmasters!
 committee_link = re.compile("<a href=\"(/representation/minutes/committees/(\d+))\">([A-Za-z0-9\- ]+)</a>")
 meeting_link = re.compile("<a href=\"(/representation/minutes/(\d+))\">([A-Za-z0-9 ]+)</a>")
 meetings_page_url = "https://www.susu.org/meetings"
 susu_root_url = "https://www.susu.org"
 meeting_date_str_fmt = re.compile("([A-z][a-z][a-z]) (\d+)[a-z]+ ([A-Za-z]+) (\d+)")
+minute_confirmation = re.compile("<h2>Minutes </h2>")
+allowable_delay_period = timedelta(21)
 
 # Calculate some magical dates
 now = datetime.now()
@@ -57,6 +61,7 @@ def fetch_committees():
     minutes page. It then returns those committees as Committee objects.
     """
     meetings_page = urllib.urlopen(meetings_page_url)
+    sleep(ddos_avoidance_delay)
 
     committees_string = ""
     for line in meetings_page.readlines():
@@ -79,7 +84,8 @@ def detect_committees(committees_string):
 def fetch_meetings(committee_url):
 
     meeting_page = urllib.urlopen(susu_root_url + committee_url)
-    
+    sleep(ddos_avoidance_delay)
+        
     meeting_string = ""
     for line in meeting_page.readlines():
         meeting_string += line
@@ -95,6 +101,16 @@ def detect_meetings(meeting_string):
             meetings.append(Meeting(date, match[1], match[0]))
     
     return meetings
+    
+def confirm_minutes(meeting_url):
+    minutes_page = urllib.urlopen(susu_root_url + meeting_url)
+    sleep(ddos_avoidance_delay)
+    
+    minutes_string = ""
+    for line in minutes_page.readlines():
+        minutes_string += line
+        
+    return minute_confirmation.search(minutes_string) != None
         
 def convert_susu_meeting_date(date_str):
 
@@ -120,6 +136,11 @@ def check_minutes_status():
     for committee in committees:
         meetings = fetch_meetings(committee.url)
     	print "\t%s had %s meetings this year." % (committee.name, len(meetings))
-
+    	for meeting in meetings:
+    	    if not confirm_minutes(meeting.url):
+    	        print "\t\tMissing minutes for %s. Due by %s. Overdue? %s" % (meeting.date.strftime("%d %b %Y"), 
+    	                                                                      (meeting.date + allowable_delay_period).strftime("%d %b %Y"), 
+    	                                                                      "Yes" if meeting.date + allowable_delay_period < now else "No")
+    	    
 if __name__=="__main__":
     check_minutes_status()
