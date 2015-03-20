@@ -43,11 +43,13 @@ class Committee():
         return "<Committee Object -- %s>" % (str(self),)
 
 class Meeting():
-	"""
-	Meetings are things held by committees that should have minutes...
-	"""
-	def __init__(self, date_str, id, url):
-		pass
+    """
+    Meetings are things held by committees that should have minutes...
+    """
+    def __init__(self, date, id, url):
+        self.date = date
+        self.id = id
+        self.url = url
 
 def fetch_committees():
     """
@@ -90,19 +92,21 @@ def detect_meetings(meeting_string):
     for match in meeting_link.findall(meeting_string):
         date = convert_susu_meeting_date(match[2])
         if this_year_to_date_p(date):
-        	print date
+            meetings.append(Meeting(date, match[1], match[0]))
+    
+    return meetings
         
 def convert_susu_meeting_date(date_str):
 
-	day, date, month, year = meeting_date_str_fmt.match(date_str).groups()
-	
-	return 	datetime.strptime("%02d %s %s" % (int(date), month, year), "%d %B %Y")
+    day, date, month, year = meeting_date_str_fmt.match(date_str).groups()
+    
+    return  datetime.strptime("%02d %s %s" % (int(date), month, year), "%d %B %Y")
 
 def this_year_to_date_p(date):
-	return (date >= academic_year_start) and (date <= now)
+    return (date >= academic_year_start) and (date <= now)
 
 def this_year_p(date):
-	return (date >= academic_year_start) and (date <= academic_year_end)
+    return (date >= academic_year_start) and (date <= academic_year_end)
 
 def check_minutes_status():
     """
@@ -113,7 +117,9 @@ def check_minutes_status():
     
     print "There are %s SUSU committees that we know about." % (len(committees),)
 
-    fetch_meetings(committees[0].url)
+    for committee in committees:
+        meetings = fetch_meetings(committee.url)
+    	print "\t%s had %s meetings this year." % (committee.name, len(meetings))
 
 if __name__=="__main__":
     check_minutes_status()
